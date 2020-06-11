@@ -1,0 +1,48 @@
+* 模型结构
+#+DOWNLOADED: file:/var/folders/73/53s3wczx1l32608prn_fdgrm0000gn/T/TemporaryItems/（screencaptureui正在存储文稿，已完成20）/截屏2020-05-06 下午2.21.17.png @ 2020-05-06 14:21:21
+[[file:Screen-Pictures/%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84/2020-05-06_14-21-21_%E6%88%AA%E5%B1%8F2020-05-06%20%E4%B8%8B%E5%8D%882.21.17.png]]
+Bert系列的预训练模型加dense层做文本匹配的二分类任务，包括bert,albert,roberta等
+* 预训练模型
+** Bert
+   + Bert论文地址 [[https://arxiv.org/abs/1810.04805]]
+   + Bert在预训练过程通过随机遮盖15%的token，对这些mask的token进行预测，相当于做一个字典空间大小的多分类任务，类似于人类做完形填空任务，能够很好的学习上下文语义信息。并且添加了NSP任务，预测2个句子片段的蕴含关系，这个可以用来做下游的分类任务。
+   + 中文预训练权重下载
+     - 谷歌官方链接[[https://github.com/google-research/bert#pre-trained-models]]
+     - 中文版本github链接[[https://github.com/ymcui/Chinese-BERT-wwm#中文模型下载]]
+   + 请修改bert模型的file为config.json，pytorch_model.bin,vocab.txt，或者在脚本文件对应的参数下添加绝对路径，例如~/bert_base/bert_config.json
+** Albert
+   + 论文地址：[[https://arxiv.org/abs/1909.11942]]
+   + ALBERT的贡献在于缩减了参数量、提升了训练速度并且在多句子任务上有提升效果。为了缩减参数量，把嵌入词向量参数分解出来，并且不同的层之间共享参数。在改进BERT的性能上，去掉了传统BERT的NSP预训练任务，添加了SOP任务（句子顺序预测），该任务通过自监督损失，用于关注句子之间的连贯性，对于多个句子输入任务能有显著的效果
+   + 从模型角度看，WordPiece的词嵌入的表示是孤立的，模型内部隐藏层的词嵌入表示是包含上下文信息的，ALBERT把O（V*H）的嵌入参数分解成O（V*E + E*H），使用较小的E维度来编码词向量能够获得分布更加均匀的词向量表示，相比于使用更大的H维度。这样通过分解嵌入参数来缩减模型参数。其次ALBERT使用了跨层共享全部参数，又大大地缩减了模型内部参数量
+   + 在预训练方式上也做出了改进，将NSP改成了预测句子之间顺序 因为NSP任务是分别同等概率采样同一篇文章中连续的句子片段和不同文章中的句子片段，预测片段之间的蕴含关系，这样的任务其实过于简单了，不同文章片段之间的关系很容易就能够预测出来。因此这里改成了SOP任务（句子顺序预测任务），通过同等概率采样同一篇文章中连续2个句子片段作为正样本，交换正样本的句子顺序作为负样本，迫使模型学到细粒度的句子连贯性，相比于NSP任务增加了训练的难度，能够提升句子对的下游任务性能
+   + V2版本的预训练模型去除了dropout层，效果更好。理论上说，dropout是用于模型减弱过拟合的影响，然而在Albert预训练过程中并没有达到过拟合的现象，因此去除了dropout
+   + 中文预训练权重下载
+     + [[https://github.com/google-research/albert/tree/c21d8a3616a4b156d21e795698ad52743ccd8b73]]
+   + 由于下载的权重为tf版本，因此需要先转成torch权重，需要添加from_tf参数在脚本中
+   + [[https://github.com/lonePatient/albert_pytorch/blob/master/README_zh.md][albert_pytorch_权重下载]]
+   + 由于中文版本的albert在tokenizer的处理不同于英文版本，英文版本需要使用sentencepiece将词表转化为spiece.model，而中文则是直接用vocab.txt，因此这里使用BertTokenizer类而不是AlbertTokenizer对文本进行tokenize
+** 
+* 仓库说明
+  1. 该仓库可以实现切换不同的预训练语言模型做文本匹配任务，只需要在脚本文件里做相应的修改即可，切换预训练模型需要修改model_type
+  2. 由于上传模型至gitlab耗费时间较多，因此进行训练之前请下载相应的预训练权重，保存在./pretrained_models/目录下
+  3. 源码目录为./src_code/
+  4. 训练以及预测脚本目录为./script/
+  5. 模型输出请保存在./outputs/
+* 训练
+  1. 在train.sh中修改对应的参数——预训练模型、学习率、训练step数，batch-size等关键参数
+  2. 如果希望训练完直接预测，请添加--do_test
+  3. bash train.sh
+* 预测-单独预测
+  1. 在test.sh中修改微调好的模型地址output_dir，其余参数不变
+  2. bash test.sh
+* 实验结果
+  | model         |   lr | max-seq-len | pergpu-batch | train-step | eval-step | dev-F1-score | test-F1-score |
+  |---------------+------+-------------+--------------+------------+-----------+--------------+---------------|
+  | bert-base     | 1e-5 |         170 |           16 |       6500 |       650 |       0.7516 |        0.7595 |
+  |---------------+------+-------------+--------------+------------+-----------+--------------+---------------|
+  | albert-base   | 1e-5 |         170 |           16 |       6500 |       650 |       0.7353 |        0.7449 |
+  | albert-large  | 1e-5 |         170 |           16 |      10400 |       650 |       0.7546 |        0.7578 |
+  | albert-xlarge | 1e-5 |         170 |           16 |      10400 |       650 |       0.7542 |        0.7591 |
+  |---------------+------+-------------+--------------+------------+-----------+--------------+---------------|
+  | electra       |      |             |              |            |           |              |               |
+

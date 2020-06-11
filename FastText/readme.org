@@ -1,0 +1,32 @@
+* FastText使用方法
+** 安装
+   pip install fasttext
+** 训练词向量 
+   #+BEGIN_SRC python
+   import fasttext
+   # Skipgram model :
+   model = fasttext.train_unsupervised('data.txt', model='skipgram')
+   # or, cbow model :
+   model = fasttext.train_unsupervised('data.txt', model='cbow')
+   #+END_SRC
+** 保存/加载模型
+   #+BEGIN_SRC python
+   #保存模型
+   model.save_model("model_filename.bin")
+   #加载模型
+   model = fasttext.load_model("model_filename.bin")
+   #+END_SRC
+** 训练文本分类模型（只能单个句子）
+   #+BEGIN_SRC python
+   import fasttext
+   model = fasttext.train_supervised('data.train.txt')
+   #+END_SRC
+   data.train.txt为训练文件，每一行包含一个训练文本句子和一个标签，标签以__label__为前缀，例如__label__0代表标签0
+* 用于文本句对相似度分类模型
+   fasttext用于句子的encoder，用孪生网络进行相似度句对分类
+#+DOWNLOADED: file:/var/folders/73/53s3wczx1l32608prn_fdgrm0000gn/T/TemporaryItems/（screencaptureui正在存储文稿，已完成35）/截屏2020-05-26 上午11.42.48.png @ 2020-05-26 11:42:55
+[[file:Screen-Pictures/%E7%94%A8%E4%BA%8E%E6%96%87%E6%9C%AC%E5%8F%A5%E5%AF%B9%E7%9B%B8%E4%BC%BC%E5%BA%A6%E5%88%86%E7%B1%BB%E6%A8%A1%E5%9E%8B/2020-05-26_11-42-55_%E6%88%AA%E5%B1%8F2020-05-26%20%E4%B8%8A%E5%8D%8811.42.48.png]]
+* 训练
+* 单独预测
+* 实验结果
+* 平均单个样本句对预测时间
